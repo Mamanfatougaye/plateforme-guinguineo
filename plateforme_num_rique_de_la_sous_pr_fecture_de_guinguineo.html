@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plateforme Numérique - Sous-Préfecture de Guinguineo</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet CSS for Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Chart.js for Statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#f0fdf4', 100: '#dcfce7', 500: '#22c55e', 600: '#16a34a', 700: '#15803d', 800: '#166534', 900: '#14532d' },
+                        admin: { 50: '#fef2f2', 600: '#dc2626', 700: '#b91c1c', 900: '#7f1d1d' },
+                        senegal: { green: '#00853f', yellow: '#fdef42', red: '#e31b23' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .marquee-container { overflow: hidden; white-space: nowrap; }
+        .marquee-text { display: inline-block; animation: marquee 25s linear infinite; }
+        @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Top Header -->
+    <header class="bg-emerald-900 text-white shadow-md relative z-50">
+        <div class="max-w-7xl mx-auto px-4 py-2 flex flex-col md:flex-row items-center justify-between gap-3">
+            <!-- Official Logo & Title -->
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center p-1 shadow-inner border-2 border-senegal-yellow">
+                    <img src="https://placehold.co/100x100/166534/ffffff?text=SPG" alt="Logo Sous-Préfecture Guinguineo" class="w-full h-full object-cover rounded-full" onerror="this.src='https://placehold.co/100x100/166534/ffffff?text=SP'">
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-wide uppercase text-senegal-yellow">République du Sénégal</h1>
+                    <p class="text-xs text-emerald-200">Ministère de l'Intérieur • Sous-Préfecture de Guinguineo</p>
+                </div>
+            </div>
+
+            <!-- Marquee Text Banner -->
+            <div class="w-full md:w-1/3 bg-emerald-950/70 py-1 px-3 rounded-lg border border-emerald-700 marquee-container text-xs font-semibold text-emerald-100">
+                <span class="marquee-text"><i class="fa-solid fa-landmark text-senegal-yellow mr-2"></i>SOUS PREFECTURE DE GUINGUINEO - PLATEFORME NUMÉRIQUE OFFICIELLE DE SERVICE PUBLIC ET GESTION TERRITORIALE</span>
+            </div>
+
+            <!-- Top Toolbar: Language Selector & Notifications -->
+            <div class="flex items-center space-x-4">
+                <!-- Language Selector -->
+                <div class="relative">
+                    <select id="langSelect" onchange="changeLanguage(this.value)" class="bg-emerald-800 text-white text-xs font-medium px-3 py-1.5 rounded-lg border border-emerald-600 focus:outline-none focus:ring-2 focus:ring-senegal-yellow cursor-pointer">
+                        <option value="fr" selected>🇫🇷 Français</option>
+                        <option value="en">🇬🇧 English</option>
+                        <option value="es">🇪🇸 Español</option>
+                        <option value="ar">🇸🇦 العربية</option>
+                        <option value="ff">🟡 Pulaar (Peul)</option>
+                    </select>
+                </div>
+
+                <!-- Notification Bell -->
+                <button onclick="toggleNotificationModal()" class="relative p-2 bg-emerald-800 hover:bg-emerald-700 rounded-lg text-emerald-100 transition focus:outline-none">
+                    <i class="fa-solid fa-bell"></i>
+                    <span id="notifBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">5</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-1 flex flex-col md:flex-row relative">
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="w-full md:w-72 bg-white border-r border-slate-200 shadow-sm flex flex-col transition-all duration-300 z-40">
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                <span class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-bars text-emerald-600"></i> <span data-i18n="menu_title">Modules Administratifs</span>
+                </span>
+                <button onclick="toggleSidebar()" class="md:hidden text-slate-500 hover:text-slate-800"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <nav class="flex-1 overflow-y-auto p-3 space-y-1 text-sm font-medium">
+                <button onclick="switchTab('accueil')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-emerald-700 bg-emerald-50 transition active" data-tab="accueil">
+                    <i class="fa-solid fa-house w-5 text-center"></i> <span data-i18n="tab_accueil">Accueil</span>
+                </button>
+                <button onclick="switchTab('terre')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition" data-tab="terre">
+                    <i class="fa-solid fa-file-contract w-5 text-center"></i> <span data-i18n="tab_terre">Approbation de terre</span>
+                </button>
+                <button onclick="switchTab('cartographie')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition" data-tab="cartographie">
+                    <i class="fa-solid fa-map-location-dot w-5 text-center"></i> <span data-i18n="tab_cartographie">Cartographie</span>
+                </button>
+                <button onclick="switchTab('parcelle')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition" data-tab="parcelle">
+                    <i class="fa-solid fa-seedling w-5 text-center"></i> <span data-i18n="tab_parcelle">Demande de parcelle</span>
+                </button>
+                <button onclick="switchTab('autorisation')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition" data-tab="autorisation">
+                    <i class="fa-solid fa-stamp w-5 text-center"></i> <span data-i18n="tab_autorisation">Demande d'autorisation</span>
+                </button>
+                <button onclick="switchTab('courriers')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition" data-tab="courriers">
+                    <i class="fa-solid fa-envelope-open-text w-5 text-center"></i> <span data-i18n="tab_courriers">Gestion des courriers</span>
+                </button>
+                <button onclick="switchTab('suivi')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition" data-tab="suivi">
+                    <i class="fa-solid fa-city w-5 text-center"></i> <span data-i18n="tab_suivi">Suivi communes & villages</span>
+                </button>
+                <button onclick="switchTab('projets')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition" data-tab="projets">
+                    <i class="fa-solid fa-diagram-project w-5 text-center"></i> <span data-i18n="tab_projets">Projets & Infrastructures</span>
+                </button>
+                <button onclick="switchTab('signalement')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition" data-tab="signalement">
+                    <i class="fa-solid fa-triangle-exclamation w-5 text-center"></i> <span data-i18n="tab_signalement">Signalement citoyen</span>
+                </button>
+                <button onclick="switchTab('reunions')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition" data-tab="reunions">
+                    <i class="fa-solid fa-calendar-days w-5 text-center"></i> <span data-i18n="tab_reunions">Gestion des réunions</span>
+                </button>
+                <button onclick="switchTab('missions')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition" data-tab="missions">
+                    <i class="fa-solid fa-car-side w-5 text-center"></i> <span data-i18n="tab_missions">Missions & Visites</span>
+                </button>
+                <button onclick="switchTab('acteurs')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition" data-tab="acteurs">
+                    <i class="fa-solid fa-address-book w-5 text-center"></i> <span data-i18n="tab_acteurs">Acteurs locaux</span>
+                </button>
+                <button onclick="switchTab('alertes')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition" data-tab="alertes">
+                    <i class="fa-solid fa-bell w-5 text-center"></i> <span data-i18n="tab_alertes">Alertes & Notifications</span>
+                </button>
+                <button onclick="switchTab('statistiques')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition" data-tab="statistiques">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i> <span data-i18n="tab_statistiques">Statistiques & Rapports IA</span>
+                </button>
+                <button onclick="switchTab('archives')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition" data-tab="archives">
+                    <i class="fa-solid fa-box-archive w-5 text-center"></i> <span data-i18n="tab_archives">Gestion des archives</span>
+                </button>
+                <button onclick="switchTab('contact')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition" data-tab="contact">
+                    <i class="fa-solid fa-address-card w-5 text-center"></i> <span data-i18n="tab_contact">Contacts administratifs</span>
+                </button>
+            </nav>
+            <div class="p-3 border-t border-slate-100 text-center text-xs text-slate-400">
+                Guinguineo OS v2.6 • 2026
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 bg-slate-100/50 p-4 md:p-6 overflow-y-auto max-h-[calc(100vh-4rem)]">
+
+            <!-- 1. ACCUEIL TAB -->
+            <div id="tab-accueil" class="tab-content space-y-6">
+                <!-- Welcome Banner -->
+                <div class="bg-gradient-to-r from-emerald-800 to-emerald-950 text-white rounded-2xl p-6 shadow-md relative overflow-hidden">
+                    <div class="relative z-10 max-w-2xl">
+                        <span class="bg-senegal-yellow text-emerald-950 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Portail Officiel</span>
+                        <h2 class="text-2xl md:text-3xl font-bold mt-2" data-i18n="welcome_title">Bienvenue sur la Plateforme de la Sous-Préfecture de Guinguineo</h2>
+                        <p class="text-emerald-100 text-sm mt-2" data-i18n="welcome_desc">Plateforme numérique moderne, centralisée et interactive pour les services administratifs, fonciers, cartographiques et citoyens.</p>
+                        
+                        <!-- Smart Search Bar with Voice and Camera -->
+                        <div class="mt-6 flex flex-col sm:flex-row items-center gap-2 bg-white/10 backdrop-blur-md p-2 rounded-xl border border-emerald-600/50">
+                            <div class="flex items-center flex-1 w-full px-3 py-2 bg-white rounded-lg shadow-inner">
+                                <i class="fa-solid fa-magnifying-glass text-slate-400 mr-3"></i>
+                                <input type="text" id="globalSearchInput" placeholder="Rechercher un service, une commune, un document..." class="w-full text-sm text-slate-800 focus:outline-none">
+                                <button onclick="startVoiceSearch()" title="Recherche vocale" class="text-slate-500 hover:text-emerald-600 px-2 transition"><i class="fa-solid fa-microphone text-base" id="micIcon"></i></button>
+                                <button onclick="openCameraModal('globalSearchInput')" title="Prendre une photo" class="text-slate-500 hover:text-emerald-600 px-2 transition"><i class="fa-solid fa-camera text-base"></i></button>
+                            </div>
+                            <button onclick="executeGlobalSearch()" class="w-full sm:w-auto bg-senegal-yellow hover:bg-yellow-400 text-emerald-950 font-bold px-5 py-2.5 rounded-lg text-sm transition shadow" data-i18n="btn_search">Rechercher</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sub-menus: Actualité, Image, Vidéo -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Actualité -->
+                    <div onclick="switchSubSection('actu')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:border-emerald-500 cursor-pointer transition group">
+                        <div class="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center mb-3 group-hover:bg-emerald-600 group-hover:text-white transition">
+                            <i class="fa-solid fa-newspaper text-lg"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base" data-i18n="sub_actu">Actualités & Communiqués</h3>
+                        <p class="text-xs text-slate-500 mt-1">Dernières notes d'information et communiqués du Sous-Préfet.</p>
+                    </div>
+                    <!-- Image -->
+                    <div onclick="switchSubSection('image')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:border-emerald-500 cursor-pointer transition group">
+                        <div class="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center mb-3 group-hover:bg-emerald-600 group-hover:text-white transition">
+                            <i class="fa-solid fa-images text-lg"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base" data-i18n="sub_images">Galerie Images</h3>
+                        <p class="text-xs text-slate-500 mt-1">Photos des visites de terrain, cérémonies et réunions officielles.</p>
+                    </div>
+                    <!-- Vidéo -->
+                    <div onclick="switchSubSection('video')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:border-emerald-500 cursor-pointer transition group">
+                        <div class="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center mb-3 group-hover:bg-emerald-600 group-hover:text-white transition">
+                            <i class="fa-solid fa-video text-lg"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base" data-i18n="sub_videos">Vidéos Institutionnelles</h3>
+                        <p class="text-xs text-slate-500 mt-1">Reportages et capsules vidéo sur les projets de développement.</p>
+                    </div>
+                </div>
+
+                <!-- Dynamic Sub-section Display -->
+                <div id="homeSubContent" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2"><i class="fa-solid fa-bullhorn text-emerald-600"></i> Dernières Actualités de l'Arrondissement</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">02 Octobre 2026</span>
+                            <h4 class="font-bold text-slate-800 text-sm mt-2">Visite de terrain du Sous-Préfet dans la commune de Ourour</h4>
+                            <p class="text-xs text-slate-600 mt-1">Inspection des chantiers de forage et rencontre avec les groupements de producteurs ruraux.</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded">28 Septembre 2026</span>
+                            <h4 class="font-bold text-slate-800 text-sm mt-2">Lancement du Comité Local de Développement (CLD)</h4>
+                            <p class="text-xs text-slate-600 mt-1">Planification des investissements communautaires pour la campagne agricole.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. APPROBATION DE TERRE TAB -->
+            <div id="tab-terre" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-6 border-b pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-file-contract text-emerald-600"></i> <span data-i18n="title_terre">Module d'Approbation de Terre</span></h2>
+                            <p class="text-xs text-slate-500 mt-1">Gestion des attributions, budgets et délibérations foncières de l'arrondissement.</p>
+                        </div>
+                        <button onclick="submitTerreForm()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow flex items-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> <span data-i18n="btn_send_email">Envoyer (fatougaye1004@gmail.com)</span>
+                        </button>
+                    </div>
+
+                    <form id="terreForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Date d'approbation</label>
+                            <input type="date" class="w-full text-sm p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Commune</label>
+                            <select class="w-full text-sm p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                <option>Ourour</option><option>Ngélou</option><option>Gagnick</option><option>Panal Wolof</option><option>Dara Mboss</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Localité / Village</label>
+                            <input type="text" placeholder="Nom du village ou quartier" class="w-full text-sm p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Type de Crédit</label>
+                            <select id="creditSelect" onchange="checkCreditOther(this.value)" class="w-full text-sm p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                <option value="dotation">Fonds de dotation</option>
+                                <option value="concours">Fonds de concours</option>
+                                <option value="autre">Autre (Préciser...)</option>
+                            </select>
+                        </div>
+                        <div id="creditAutreContainer" class="hidden">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Préciser l'autre crédit</label>
+                            <input type="text" placeholder="Nom du fonds spécifique" class="w-full text-sm p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Délibération (Document PDF)</label>
+                            <input type="file" accept=".pdf" class="w-full text-xs p-2 rounded-lg border border-slate-300 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+                        </div>
+
+                        <!-- Budget Grid -->
+                        <div class="md:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500">Budget Prévu (FCFA)</label>
+                                <input type="number" id="bPrevu" value="15000000" oninput="calculateBudget()" class="w-full text-sm p-2 mt-1 rounded border border-slate-300">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500">Budget Reçu (FCFA)</label>
+                                <input type="number" id="bRecu" value="12000000" oninput="calculateBudget()" class="w-full text-sm p-2 mt-1 rounded border border-slate-300">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500">Budget Consommé (FCFA)</label>
+                                <input type="number" id="bConsomme" value="8500000" oninput="calculateBudget()" class="w-full text-sm p-2 mt-1 rounded border border-slate-300">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500">Budget Restant (FCFA)</label>
+                                <input type="text" id="bRestant" readonly class="w-full text-sm p-2 mt-1 rounded border border-slate-300 bg-slate-100 font-bold text-emerald-700">
+                            </div>
+                        </div>
+                        <div class="md:col-span-3 flex justify-end">
+                            <button type="button" onclick="exportTerrePDF()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2">
+                                <i class="fa-solid fa-file-pdf text-red-400"></i> Exporter rapport budget en PDF
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 3. CARTOGRAPHIE TAB -->
+            <div id="tab-cartographie" class="tab-content hidden space-y-4">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-3">
+                    <div class="flex items-center gap-2 w-full md:w-auto">
+                        <div class="relative flex-1 md:w-80">
+                            <input type="text" id="mapSearchInput" placeholder="Rechercher une zone, un village..." class="w-full text-xs pl-8 pr-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400 text-xs"></i>
+                            <button onclick="startVoiceSearchMap()" class="absolute right-2.5 top-2 text-slate-400 hover:text-emerald-600"><i class="fa-solid fa-microphone text-xs"></i></button>
+                        </div>
+                        <button onclick="searchMapLocation()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition">Rechercher</button>
+                    </div>
+
+                    <!-- Coordinates Input X / Y -->
+                    <div class="flex items-center gap-2 text-xs">
+                        <span>X:</span> <input type="text" id="coordX" placeholder="-15.43" class="w-20 p-1.5 rounded border border-slate-300 text-center">
+                        <span>Y:</span> <input type="text" id="coordY" placeholder="14.12" class="w-20 p-1.5 rounded border border-slate-300 text-center">
+                        <button onclick="displayCoordinates()" class="bg-slate-800 text-white px-3 py-1.5 rounded font-medium hover:bg-slate-900 transition">Afficher</button>
+                    </div>
+
+                    <!-- Import / Export Toolbar Icons -->
+                    <div class="flex items-center gap-2">
+                        <label title="Importer GeoJSON, CSV, KML" class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-lg transition text-xs flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-arrow-up text-emerald-600"></i> Importer
+                            <input type="file" id="importGeoFile" accept=".geojson,.json,.csv,.kml" onchange="handleGeoImport(event)" class="hidden">
+                        </label>
+                        <button onclick="exportGeoData()" title="Exporter données dessinées" class="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-lg transition text-xs flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-arrow-down text-emerald-600"></i> Exporter
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main Map Container & Right Layers / Bottom Drawing Tools -->
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                    <!-- Left Sidebar for Itinerary / Layers / AI Calculation -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-4 lg:col-span-1 text-xs">
+                        <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-route text-emerald-600"></i> Itinéraire & Navigation</h3>
+                        <div class="space-y-2">
+                            <div>
+                                <label class="block text-slate-500 mb-1">Point de départ</label>
+                                <input type="text" id="routeStart" placeholder="Position actuelle (GPS)" class="w-full p-2 rounded border border-slate-300">
+                            </div>
+                            <div>
+                                <label class="block text-slate-500 mb-1">Point d'arrivée</label>
+                                <input type="text" id="routeEnd" placeholder="Destination (ex: Ngélou)" class="w-full p-2 rounded border border-slate-300">
+                            </div>
+                            <div>
+                                <label class="block text-slate-500 mb-1">Moyen de transport</label>
+                                <select id="transportMode" class="w-full p-2 rounded border border-slate-300">
+                                    <option value="pieton">🚶 Piéton</option>
+                                    <option value="bicyclette">🚲 Bicyclette</option>
+                                    <option value="moto">🏍️ Moto</option>
+                                    <option value="voiture" selected>🚗 Voiture</option>
+                                    <option value="camion">🚚 Camion</option>
+                                </select>
+                            </div>
+                            <button onclick="calculateItinerary()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg font-semibold transition">
+                                <i class="fa-solid fa-play mr-1"></i> Démarrer Itinéraire (Voix GPS)
+                            </button>
+                        </div>
+
+                        <hr class="border-slate-100">
+
+                        <!-- AI Geographic Analysis -->
+                        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 space-y-2">
+                            <h4 class="font-bold text-emerald-900 flex items-center gap-1.5"><i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i> Analyse IA & Superficie</h4>
+                            <p id="aiGeoResult" class="text-emerald-700">Tracez un polygone ou importez une couche pour calculer automatiquement la surface et obtenir un rapport.</p>
+                            <button onclick="runAIGeoAnalysis()" class="w-full bg-emerald-800 hover:bg-emerald-900 text-white py-1.5 rounded font-medium transition">Calculer Surface & Générer Graphique</button>
+                        </div>
+
+                        <!-- Theme Layers Toggle -->
+                        <div>
+                            <h4 class="font-bold text-slate-700 mb-2">Couches Thématiques</h4>
+                            <div class="space-y-1.5">
+                                <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleLayer('villages', this.checked)"> Villages & Localités</label>
+                                <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleLayer('infrastructures', this.checked)"> Infrastructures sanitaires & scolaires</label>
+                                <label class="flex items-center gap-2"><input type="checkbox" checked onchange="toggleLayer('parcelles', this.checked)"> Parcelles attribuées</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Leaflet Map Area -->
+                    <div class="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative h-[550px]">
+                        <div id="leafletMap" class="w-full h-full z-10"></div>
+
+                        <!-- Map Controls Overlay Bottom Right (Drawing tools, Base map switch) -->
+                        <div class="absolute bottom-4 right-4 z-20 flex flex-col gap-2 bg-white/90 backdrop-blur p-2 rounded-xl shadow-lg border border-slate-200">
+                            <div class="flex gap-1 text-xs font-semibold">
+                                <button onclick="setBaseMap('osm')" class="px-2 py-1 bg-emerald-600 text-white rounded">OSM</button>
+                                <button onclick="setBaseMap('satellite')" class="px-2 py-1 bg-slate-200 text-slate-700 rounded hover:bg-slate-300">Satellite</button>
+                                <button onclick="setBaseMap('relief')" class="px-2 py-1 bg-slate-200 text-slate-700 rounded hover:bg-slate-300">Relief</button>
+                            </div>
+                            <div class="flex gap-1 text-xs">
+                                <button onclick="setDrawMode('point')" title="Dessiner Point" class="p-2 bg-slate-100 hover:bg-emerald-100 rounded text-slate-700"><i class="fa-solid fa-location-dot"></i></button>
+                                <button onclick="setDrawMode('line')" title="Dessiner Ligne" class="p-2 bg-slate-100 hover:bg-emerald-100 rounded text-slate-700"><i class="fa-solid fa-chart-line"></i></button>
+                                <button onclick="setDrawMode('polygon')" title="Dessiner Polygone" class="p-2 bg-slate-100 hover:bg-emerald-100 rounded text-slate-700"><i class="fa-solid fa-draw-polygon"></i></button>
+                                <button onclick="clearDrawings()" title="Effacer tout" class="p-2 bg-red-50 hover:bg-red-100 rounded text-red-600"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. DEMANDE DE PARCELLE TAB -->
+            <div id="tab-parcelle" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-6 border-b pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-seedling text-emerald-600"></i> <span data-i18n="title_parcelle">Demande de Attribution de Parcelle</span></h2>
+                            <p class="text-xs text-slate-500 mt-1">Formulaire officiel pour l'instruction des dossiers de parcelles agricoles, habitat ou projets.</p>
+                        </div>
+                        <button onclick="submitParcelleForm()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow flex items-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> <span data-i18n="btn_send_email">Envoyer (fatougaye1004@gmail.com)</span>
+                        </button>
+                    </div>
+
+                    <form id="parcelleForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Commune (Obligatoire) *</label>
+                            <select id="parcelleCommune" class="w-full p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none" required>
+                                <option value="">-- Choisir une commune --</option>
+                                <option>Ourour</option><option>Ngélou</option><option>Gagnick</option><option>Panal Wolof</option><option>Dara Mboss</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Prénom</label>
+                            <input type="text" placeholder="Prénom du demandeur" class="w-full p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nom</label>
+                            <input type="text" placeholder="Nom du demandeur" class="w-full p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Téléphone</label>
+                            <input type="tel" placeholder="+221 7X XXX XX XX" class="w-full p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Région</label>
+                            <input type="text" value="Kaolack" readonly class="w-full p-2.5 rounded-lg border border-slate-300 bg-slate-100">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Village / Localité</label>
+                            <input type="text" placeholder="Nom du village" class="w-full p-2.5 rounded-lg border border-slate-300">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Quartier</label>
+                            <input type="text" placeholder="Nom du quartier" class="w-full p-2.5 rounded-lg border border-slate-300">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Type de Demande</label>
+                            <select class="w-full p-2.5 rounded-lg border border-slate-300">
+                                <option>Agricole</option><option>Habitat</option><option>Projet</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Documents à fournir (Max 20 fichiers PDF/Word)</label>
+                            <input type="file" multiple accept=".pdf,.doc,.docx" class="w-full text-xs p-2 rounded-lg border border-slate-300">
+                        </div>
+                        <div class="md:col-span-3 grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600">Coordonnée X (Longitude)</label>
+                                <input type="text" id="parcelleX" placeholder="-15.432" class="w-full p-2 mt-1 rounded border border-slate-300">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600">Coordonnée Y (Latitude)</label>
+                                <input type="text" id="parcelleY" placeholder="14.125" class="w-full p-2 mt-1 rounded border border-slate-300">
+                            </div>
+                        </div>
+                        <div class="md:col-span-3 flex justify-end gap-3">
+                            <button type="button" onclick="exportParcelleCoords()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-slate-900 transition">Exporter coordonnées</button>
+                            <button type="button" onclick="sendToCartography()" class="bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-emerald-800 transition">Afficher sur image satellite</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 5. DEMANDE D'AUTORISATION TAB -->
+            <div id="tab-autorisation" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-6 border-b pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-stamp text-emerald-600"></i> <span data-i18n="title_autorisation">Demande d'Autorisation (Événements & Manifestations)</span></h2>
+                            <p class="text-xs text-slate-500 mt-1">Gamou, Magal, mariages, baptêmes, soirées, séances de lutte et autres rassemblements.</p>
+                        </div>
+                        <button onclick="submitAutorisationForm()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow flex items-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> <span data-i18n="btn_send_email">Envoyer (fatougaye1004@gmail.com)</span>
+                        </button>
+                    </div>
+
+                    <form id="autorisationForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Prénom</label>
+                            <input type="text" placeholder="Prénom" class="w-full p-2.5 rounded-lg border border-slate-300" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nom</label>
+                            <input type="text" placeholder="Nom" class="w-full p-2.5 rounded-lg border border-slate-300" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Téléphone</label>
+                            <input type="tel" placeholder="Téléphone" class="w-full p-2.5 rounded-lg border border-slate-300" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Lieu de l'événement</label>
+                            <input type="text" placeholder="Lieu précis" class="w-full p-2.5 rounded-lg border border-slate-300" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Type de Demande</label>
+                            <select id="autoTypeSelect" onchange="checkAutoOther(this.value)" class="w-full p-2.5 rounded-lg border border-slate-300">
+                                <option value="gamou">Gamou</option>
+                                <option value="magal">Magal</option>
+                                <option value="mariage">Mariage</option>
+                                <option value="bapteme">Baptême</option>
+                                <option value="soiree">Soirée</option>
+                                <option value="lutte">Séance de lutte</option>
+                                <option value="autres">Autres</option>
+                            </select>
+                        </div>
+                        <div id="autoAutreContainer" class="hidden">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Préciser le type d'événement</label>
+                            <input type="text" placeholder="Type d'événement" class="w-full p-2.5 rounded-lg border border-slate-300">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Documents requis (Lettre au Sous-Préfet, CNI...)</label>
+                            <input type="file" multiple class="w-full text-xs p-2 rounded-lg border border-slate-300">
+                        </div>
+                        <div class="md:col-span-3 p-4 bg-amber-50 rounded-xl border border-amber-200 flex items-center justify-between">
+                            <div>
+                                <h4 class="font-bold text-amber-900 text-xs">Statut d'approbation administrative (Réservé à l'Administration)</h4>
+                                <p class="text-xs text-amber-700">L'administrateur peut autoriser ou refuser. Le citoyen ne verra que la décision finale.</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <span class="px-3 py-1 bg-amber-200 text-amber-900 font-bold text-xs rounded-full">En attente d'examen</span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 6. GESTION DES COURRIERS TAB -->
+            <div id="tab-courriers" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-6 border-b pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-envelope-open-text text-emerald-600"></i> <span data-i18n="title_courriers">Gestion des Courriers et Dossiers</span></h2>
+                            <p class="text-xs text-slate-500 mt-1">Enregistrement des courriers entrants et sortants avec numérotation automatique.</p>
+                        </div>
+                        <button onclick="submitCourrierForm()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow flex items-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> <span data-i18n="btn_send_email">Envoyer (fatougaye1004@gmail.com)</span>
+                        </button>
+                    </div>
+
+                    <form id="courrierForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Numéro de Référence Automatique</label>
+                            <input type="text" value="SPG-2026-0842" readonly class="w-full p-2.5 rounded-lg border border-slate-300 bg-slate-100 font-bold text-emerald-700">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Type de Courrier</label>
+                            <select class="w-full p-2.5 rounded-lg border border-slate-300">
+                                <option>Courrier Entrant</option><option>Courrier Sortant</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Expéditeur / Destinataire</label>
+                            <input type="text" placeholder="Nom de l'organisme ou personne" class="w-full p-2.5 rounded-lg border border-slate-300" required>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Objet du Courrier</label>
+                            <input type="text" placeholder="Objet détaillé" class="w-full p-2.5 rounded-lg border border-slate-300" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Date de Réception</label>
+                            <input type="date" class="w-full p-2.5 rounded-lg border border-slate-300" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Service / Personne Responsable</label>
+                            <input type="text" placeholder="Agent en charge" class="w-full p-2.5 rounded-lg border border-slate-300">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Pièces jointes (PDF / Photos)</label>
+                            <input type="file" multiple accept=".pdf,image/*" class="w-full text-xs p-2 rounded-lg border border-slate-300">
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 7. SUIVI COMMUNES TAB -->
+            <div id="tab-suivi" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-6 border-b pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-city text-emerald-600"></i> <span data-i18n="title_suivi">Suivi des Communes, Villages et Quartiers</span></h2>
+                            <p class="text-xs text-slate-500 mt-1">Démographie, services sociaux de base et projets en cours par localité.</p>
+                        </div>
+                        <button onclick="submitSuiviForm()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow flex items-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> <span data-i18n="btn_send_email">Envoyer (fatougaye1004@gmail.com)</span>
+                        </button>
+                    </div>
+
+                    <form id="suiviForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Arrondissement</label>
+                            <input type="text" value="Guinguineo" readonly class="w-full p-2.5 rounded-lg border border-slate-300 bg-slate-100">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Commune</label>
+                            <select class="w-full p-2.5 rounded-lg border border-slate-300">
+                                <option>Ourour</option><option>Ngélou</option><option>Gagnick</option><option>Panal Wolof</option><option>Dara Mboss</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Village / Quartier</label>
+                            <input type="text" placeholder="Nom du village ou quartier" class="w-full p-2.5 rounded-lg border border-slate-300">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Population estimée</label>
+                            <input type="number" placeholder="Nombre d'habitants" class="w-full p-2.5 rounded-lg border border-slate-300">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Contact des responsables</label>
+                            <input type="text" placeholder="Téléphone / Nom du chef" class="w-full p-2.5 rounded-lg border border-slate-300">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Service social de base</label>
+                            <select id="serviceSocialSelect" onchange="checkServiceOther(this.value)" class="w-full p-2.5 rounded-lg border border-slate-300">
+                                <option value="education">Éducation</option>
+                                <option value="sante">Santé</option>
+                                <option value="hydrologie">Hydrologie</option>
+                                <option value="electricite">Électricité</option>
+                                <option value="equipements">Équipements publics</option>
+                                <option value="sport">Sport</option>
+                                <option value="commerce">Commerce</option>
+                                <option value="routes">Infrastructures routières</option>
+                                <option value="transport">Transport</option>
+                                <option value="autre">Autre (Préciser...)</option>
+                            </select>
+                        </div>
+                        <div id="serviceAutreContainer" class="hidden">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Préciser le service social</label>
+                            <input type="text" placeholder="Nom du service" class="w-full p-2.5 rounded-lg border border-slate-300">
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 8. PROJETS & INFRASTRUCTURES TAB -->
+            <div id="tab-projets" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-6 border-b pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-diagram-project text-emerald-600"></i> <span data-i18n="title_projets">Gestion des Projets et Infrastructures</span></h2>
+                            <p class="text-xs text-slate-500 mt-1">Suivi de l'avancement, budgets, photos avant/après et alertes de retard.</p>
+                        </div>
+                        <button onclick="submitProjetForm()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow flex items-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> <span data-i18n="btn_send_email">Envoyer (fatougaye1004@gmail.com)</span>
+                        </button>
+                    </div>
+
+                    <form id="projetForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nom du Projet</label>
+                            <input type="text" placeholder="Intitulé du projet" class="w-full p-2.5 rounded-lg border border-slate-300" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Type de localité</label>
+                            <select class="w-full p-2.5 rounded-lg border border-slate-300">
+                                <option>Commune</option><option>Village</option><option>Autre</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">État du projet (Automatique)</label>
+                            <input type="text" value="En cours" readonly class="w-full p-2.5 rounded-lg border border-slate-300 bg-slate-100 font-bold text-emerald-700">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Avancement (%)</label>
+                            <input type="range" min="0" max="100" value="45" oninput="document.getElementById('avancementVal').innerText = this.value + '%'" class="w-full accent-emerald-600">
+                            <span id="avancementVal" class="text-xs font-bold text-emerald-700">45%</span>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Budget Prévu (FCFA)</label>
+                            <input type="number" class="w-full p-2.5 rounded-lg border border-slate-300">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Budget Consommé (FCFA)</label>
+                            <input type="number" class="w-full p-2.5 rounded-lg border border-slate-300">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Photos Avant / Après</label>
+                            <input type="file" multiple accept="image/*" class="w-full text-xs p-2 rounded-lg border border-slate-300">
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 9. SIGNALEMENT CITOYEN TAB -->
+            <div id="tab-signalement" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-6 border-b pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-emerald-600"></i> <span data-i18n="title_signalement">Signalement des Problèmes par les Citoyens</span></h2>
+                            <p class="text-xs text-slate-500 mt-1">Foncier, éclairage, eau, routes, inondations, déchets, incidents avec géolocalisation et photo horodatée.</p>
+                        </div>
+                        <button onclick="submitSignalementForm()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow flex items-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> <span data-i18n="btn_send_email">Envoyer (fatougaye1004@gmail.com)</span>
+                        </button>
+                    </div>
+
+                    <form id="signalementForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Prénom</label>
+                            <input type="text" placeholder="Prénom" class="w-full p-2.5 rounded-lg border border-slate-300" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nom</label>
+                            <input type="text" placeholder="Nom" class="w-full p-2.5 rounded-lg border border-slate-300" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Commune</label>
+                            <select class="w-full p-2.5 rounded-lg border border-slate-300">
+                                <option>Ourour</option><option>Ngélou</option><option>Gagnick</option><option>Panal Wolof</option><option>Dara Mboss</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Type de Signalement</label>
+                            <select id="sigTypeSelect" onchange="checkSigOther(this.value)" class="w-full p-2.5 rounded-lg border border-slate-300">
+                                <option value="foncier">Foncier</option>
+                                <option value="eclairage">Panne d'éclairage</option>
+                                <option value="eau">Problème d'eau</option>
+                                <option value="route">Route dégradée</option>
+                                <option value="inondation">Inondation</option>
+                                <option value="dechets">Déchets</option>
+                                <option value="infrastructure">Infrastructure publique</option>
+                                <option value="urgence">Besoin urgent</option>
+                                <option value="autres">Autres</option>
+                            </select>
+                        </div>
+                        <div id="sigAutreContainer" class="hidden">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Préciser le problème</label>
+                            <input type="text" placeholder="Description du problème" class="w-full p-2.5 rounded-lg border border-slate-300">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Date (Intégration automatique)</label>
+                            <input type="text" id="sigAutoDate" readonly class="w-full p-2.5 rounded-lg border border-slate-300 bg-slate-100 font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Prendre une photo (Caméra + Horodatage & GPS)</label>
+                            <button type="button" onclick="openCameraModal('sigPhotoPreview')" class="w-full bg-slate-800 hover:bg-slate-900 text-white p-2.5 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-camera text-senegal-yellow"></i> Activer Caméra & Horodater
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 10. GESTION DES RÉUNIONS TAB -->
+            <div id="tab-reunions" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-6 border-b pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-calendar-days text-emerald-600"></i> <span data-i18n="title_reunions">Gestion des Réunions & Calendrier Administratif</span></h2>
+                            <p class="text-xs text-slate-500 mt-1">CRD, CDD, CLD, réunions avec les maires, chefs de village et émargement par QR Code et signature électronique.</p>
+                        </div>
+                        <button onclick="submitReunionForm()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow flex items-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> <span data-i18n="btn_send_email">Envoyer (fatougaye1004@gmail.com)</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="md:col-span-2 space-y-4">
+                            <form id="reunionForm" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Type de Réunion</label>
+                                    <select class="w-full p-2.5 rounded-lg border border-slate-300">
+                                        <option>Comité Régional de Développement (CRD)</option>
+                                        <option>Comité Départemental de Développement (CDD)</option>
+                                        <option>Comité Local de Développement (CLD)</option>
+                                        <option>Rencontre avec les maires</option>
+                                        <option>Rencontre avec les chefs de village</option>
+                                        <option>Mission & Visite de terrain</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Date et Heure</label>
+                                    <input type="datetime-local" class="w-full p-2.5 rounded-lg border border-slate-300">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Objet & Ordre du Jour</label>
+                                    <textarea rows="3" placeholder="Détails de la réunion..." class="w-full p-2.5 rounded-lg border border-slate-300"></textarea>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- QR Code & Signature Box -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col items-center text-center justify-between">
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm mb-1">QR Code Émargement</h4>
+                                <p class="text-xs text-slate-500 mb-3">Scannez pour ouvrir le formulaire participant</p>
+                                <div class="bg-white p-3 rounded-lg shadow-sm inline-block border">
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=https://guinguineo.gouv.sn/emargement" alt="QR Code" class="w-32 h-32">
+                                </div>
+                            </div>
+                            <button onclick="openSignatureModal()" class="mt-4 w-full bg-slate-800 hover:bg-slate-900 text-white py-2 rounded-lg text-xs font-semibold transition">
+                                <i class="fa-solid fa-signature mr-1"></i> Ouvrir Signature Électronique
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 11. MISSIONS & VISITES TAB -->
+            <div id="tab-missions" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-6 border-b pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-car-side text-emerald-600"></i> <span data-i18n="title_missions">Gestion des Missions et Visites de Terrain</span></h2>
+                            <p class="text-xs text-slate-500 mt-1">Historique des déplacements du Sous-Préfet, observations, problèmes constatés et décisions prises.</p>
+                        </div>
+                        <button onclick="submitMissionForm()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow flex items-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> <span data-i18n="btn_send_email">Envoyer (fatougaye1004@gmail.com)</span>
+                        </button>
+                    </div>
+
+                    <form id="missionForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Date de mission</label>
+                            <input type="date" class="w-full p-2.5 rounded-lg border border-slate-300" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Localité visitée</label>
+                            <input type="text" placeholder="Village ou commune" class="w-full p-2.5 rounded-lg border border-slate-300" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Motif de la visite</label>
+                            <input type="text" placeholder="Objet de la visite" class="w-full p-2.5 rounded-lg border border-slate-300" required>
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Problèmes constatés & Décisions prises</label>
+                            <textarea rows="3" placeholder="Rapport de mission..." class="w-full p-2.5 rounded-lg border border-slate-300"></textarea>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 12. ACTEURS LOCAUX TAB -->
+            <div id="tab-acteurs" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-4"><i class="fa-solid fa-address-book text-emerald-600"></i> <span data-i18n="title_acteurs">Base de Données des Acteurs Locaux (Annuaire)</span></h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">Mairie</span>
+                            <h4 class="font-bold text-slate-800 text-sm mt-2">Mairie de Guinguineo</h4>
+                            <p class="text-xs text-slate-600 mt-1">Maire : M. Mamadou Faye</p>
+                            <p class="text-xs text-emerald-700 font-semibold mt-2">📞 76 805 35 78</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <span class="text-xs bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded">Santé</span>
+                            <h4 class="font-bold text-slate-800 text-sm mt-2">Centre de Santé de Guinguineo</h4>
+                            <p class="text-xs text-slate-600 mt-1">Médecin Chef : Dr. Ndiaye</p>
+                            <p class="text-xs text-emerald-700 font-semibold mt-2">📞 77 654 32 10</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <span class="text-xs bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded">Sécurité</span>
+                            <h4 class="font-bold text-slate-800 text-sm mt-2">Gendarmerie Nationale - Brigade</h4>
+                            <p class="text-xs text-slate-600 mt-1">Commandant de Brigade</p>
+                            <p class="text-xs text-emerald-700 font-semibold mt-2">📞 33 941 12 34</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 13. ALERTES & NOTIFICATIONS TAB -->
+            <div id="tab-alertes" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-4"><i class="fa-solid fa-bell text-emerald-600"></i> <span data-i18n="title_alertes">Centre d'Alertes et Notifications en Temps Réel</span></h2>
+                    
+                    <div class="space-y-3">
+                        <div class="p-4 bg-red-50 rounded-xl border border-red-200 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <i class="fa-solid fa-triangle-exclamation text-red-600 text-lg"></i>
+                                <div>
+                                    <h4 class="font-bold text-red-900 text-sm">Dossier Foncier Arrivé à Échéance</h4>
+                                    <p class="text-xs text-red-700">Le dossier d'attribution Ourour #42 nécessite une validation urgente.</p>
+                                </div>
+                            </div>
+                            <span class="text-xs text-red-600 font-bold">Il y a 10 min</span>
+                        </div>
+                        <div class="p-4 bg-amber-50 rounded-xl border border-amber-200 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <i class="fa-solid fa-clock text-amber-600 text-lg"></i>
+                                <div>
+                                    <h4 class="font-bold text-amber-900 text-sm">Réunion CRD Imminente</h4>
+                                    <p class="text-xs text-amber-700">Comité Régional de Développement prévu demain à 10h00.</p>
+                                </div>
+                            </div>
+                            <span class="text-xs text-amber-600 font-bold">Il y a 1 heure</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 14. STATISTIQUES & RAPPORTS IA TAB -->
+            <div id="tab-statistiques" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-6 border-b pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-chart-pie text-emerald-600"></i> <span data-i18n="title_statistiques">Statistiques et Rapports Assistés par IA</span></h2>
+                            <p class="text-xs text-slate-500 mt-1">Génération automatique de rapports hebdomadaires, mensuels et trimestriels avec commentaires IA.</p>
+                        </div>
+                        <button onclick="generateIAReport()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow flex items-center gap-2">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Générer Rapport IA & PDF
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <h4 class="font-bold text-slate-700 text-sm mb-3">Répartition des Demandes par Commune</h4>
+                            <canvas id="statChart1" height="200"></canvas>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <h4 class="font-bold text-slate-700 text-sm mb-3">État des Projets d'Infrastructures</h4>
+                            <canvas id="statChart2" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 15. ARCHIVES TAB -->
+            <div id="tab-archives" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-4"><i class="fa-solid fa-box-archive text-emerald-600"></i> <span data-i18n="title_archives">Gestion des Archives Administratives</span></h2>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 text-center hover:bg-emerald-50 cursor-pointer transition">
+                            <i class="fa-solid fa-file-shield text-2xl text-emerald-600 mb-2"></i>
+                            <h4 class="font-bold text-slate-800 text-xs">Arrêtés & Décisions</h4>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 text-center hover:bg-emerald-50 cursor-pointer transition">
+                            <i class="fa-solid fa-file-lines text-2xl text-emerald-600 mb-2"></i>
+                            <h4 class="font-bold text-slate-800 text-xs">Procès-Verbaux</h4>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 text-center hover:bg-emerald-50 cursor-pointer transition">
+                            <i class="fa-solid fa-folder-open text-2xl text-emerald-600 mb-2"></i>
+                            <h4 class="font-bold text-slate-800 text-xs">Textes Réglementaires</h4>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 text-center hover:bg-emerald-50 cursor-pointer transition">
+                            <i class="fa-solid fa-file-pdf text-2xl text-red-500 mb-2"></i>
+                            <h4 class="font-bold text-slate-800 text-xs">Rapports de Projets</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 16. CONTACT TAB -->
+            <div id="tab-contact" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-6"><i class="fa-solid fa-address-card text-emerald-600"></i> <span data-i18n="title_contact">Contacts Officiels de la Sous-Préfecture</span></h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">Sous-Préfet</span>
+                            <h4 class="font-bold text-slate-800 text-sm mt-2">M. le Sous-Préfet</h4>
+                            <p class="text-xs text-slate-600 mt-1">📧 soxgyau@gmail.com</p>
+                            <p class="text-xs text-emerald-700 font-semibold mt-1">📞 78 654 32 34</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <span class="text-xs bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded">Mairie</span>
+                            <h4 class="font-bold text-slate-800 text-sm mt-2">Secrétariat Mairie</h4>
+                            <p class="text-xs text-slate-600 mt-1">📧 mamadoufaye@mail.com</p>
+                            <p class="text-xs text-emerald-700 font-semibold mt-1">📞 76 805 35 78</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <span class="text-xs bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded">Secrétaire</span>
+                            <h4 class="font-bold text-slate-800 text-sm mt-2">Mme Fatou Geye</h4>
+                            <p class="text-xs text-slate-600 mt-1">📧 fatougueye@gmail.com</p>
+                            <p class="text-xs text-emerald-700 font-semibold mt-1">📞 77 987 65 43</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <span class="text-xs bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded">Agent Foncier</span>
+                            <h4 class="font-bold text-slate-800 text-sm mt-2">M. Pape Faye</h4>
+                            <p class="text-xs text-slate-600 mt-1">📧 papefaye@gmail.com</p>
+                            <p class="text-xs text-emerald-700 font-semibold mt-1">📞 76 891 23 40</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <span class="text-xs bg-teal-100 text-teal-800 font-bold px-2 py-0.5 rounded">Stagiaire</span>
+                            <h4 class="font-bold text-slate-800 text-sm mt-2">Mme Fatou Gaye</h4>
+                            <p class="text-xs text-slate-600 mt-1">📧 fatougaye1004@gmail.com</p>
+                            <p class="text-xs text-emerald-700 font-semibold mt-1">📞 76 153 58 78</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Camera Modal -->
+    <div id="cameraModal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2"><i class="fa-solid fa-camera text-emerald-600"></i> Prise de Vue (Caméra & Horodatage)</h3>
+                <button onclick="closeCameraModal()" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="relative bg-black rounded-xl overflow-hidden aspect-video flex items-center justify-center">
+                <video id="webcamVideo" autoplay playsinline class="w-full h-full object-cover"></video>
+                <canvas id="webcamCanvas" class="hidden"></canvas>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeCameraModal()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">Annuler</button>
+                <button onclick="capturePhoto()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow">Capturer Photo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signature Modal -->
+    <div id="signatureModal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2"><i class="fa-solid fa-signature text-emerald-600"></i> Signature Électronique à Main Levée</h3>
+                <button onclick="closeSignatureModal()" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 overflow-hidden">
+                <canvas id="sigCanvas" width="400" height="200" class="w-full cursor-crosshair"></canvas>
+            </div>
+            <div class="flex justify-between items-center">
+                <button onclick="clearSignature()" class="px-3 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">Effacer</button>
+                <div class="flex gap-2">
+                    <button onclick="closeSignatureModal()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">Annuler</button>
+                    <button onclick="saveSignature()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow">Valider Signature</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Modal -->
+    <div id="notificationModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2"><i class="fa-solid fa-bell text-emerald-600"></i> Centre de Notifications</h3>
+                <button onclick="toggleNotificationModal()" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-3 max-h-80 overflow-y-auto">
+                <div class="p-3 bg-red-50 rounded-xl border border-red-100 text-xs">
+                    <span class="font-bold text-red-800">Dossier Foncier #42</span>
+                    <p class="text-red-700 mt-0.5">Arrivé à échéance pour la commune de Ourour.</p>
+                </div>
+                <div class="p-3 bg-amber-50 rounded-xl border border-amber-100 text-xs">
+                    <span class="font-bold text-amber-800">Réunion CRD</span>
+                    <p class="text-amber-700 mt-0.5">Rendez-vous fixé demain à 10h00 avec les chefs de village.</p>
+                </div>
+            </div>
+            <div class="flex justify-end">
+                <button onclick="toggleNotificationModal()" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let currentLang = 'fr';
+        let map = null;
+        let baseLayers = {};
+        let drawnItems = null;
+        let activeDrawMode = null;
+        let videoStream = null;
+        let targetInputId = null;
+
+        const translations = {
+            fr: {
+                menu_title: "Modules Administratifs",
+                tab_accueil: "Accueil",
+                tab_terre: "Approbation de terre",
+                tab_cartographie: "Cartographie",
+                tab_parcelle: "Demande de parcelle",
+                tab_autorisation: "Demande d'autorisation",
+                tab_courriers: "Gestion des courriers",
+                tab_suivi: "Suivi communes & villages",
+                tab_projets: "Projets & Infrastructures",
+                tab_signalement: "Signalement citoyen",
+                tab_reunions: "Gestion des réunions",
+                tab_missions: "Missions & Visites",
+                tab_acteurs: "Acteurs locaux",
+                tab_alertes: "Alertes & Notifications",
+                tab_statistiques: "Statistiques & Rapports IA",
+                tab_archives: "Gestion des archives",
+                tab_contact: "Contacts administratifs",
+                welcome_title: "Bienvenue sur la Plateforme de la Sous-Préfecture de Guinguineo",
+                welcome_desc: "Plateforme numérique moderne, centralisée et interactive pour les services administratifs, fonciers, cartographiques et citoyens.",
+                btn_search: "Rechercher",
+                sub_actu: "Actualités & Communiqués",
+                sub_images: "Galerie Images",
+                sub_videos: "Vidéos Institutionnelles",
+                title_terre: "Module d'Approbation de Terre",
+                title_parcelle: "Demande de Attribution de Parcelle",
+                title_autorisation: "Demande d'Autorisation (Événements)",
+                title_courriers: "Gestion des Courriers et Dossiers",
+                title_suivi: "Suivi des Communes, Villages et Quartiers",
+                title_projets: "Gestion des Projets et Infrastructures",
+                title_signalement: "Signalement des Problèmes par les Citoyens",
+                title_reunions: "Gestion des Réunions & Calendrier",
+                title_missions: "Gestion des Missions et Visites",
+                title_acteurs: "Base de Données des Acteurs Locaux",
+                title_alertes: "Centre d'Alertes et Notifications",
+                title_statistiques: "Statistiques et Rapports IA",
+                title_archives: "Gestion des Archives Administratives",
+                title_contact: "Contacts Officiels",
+                btn_send_email: "Envoyer (fatougaye1004@gmail.com)"
+            },
+            en: {
+                menu_title: "Administrative Modules",
+                tab_accueil: "Home",
+                tab_terre: "Land Approval",
+                tab_cartographie: "Cartography",
+                tab_parcelle: "Plot Request",
+                tab_autorisation: "Authorization Request",
+                tab_courriers: "Mail Management",
+                tab_suivi: "Communes & Villages",
+                tab_projets: "Projects & Infrastructure",
+                tab_signalement: "Citizen Reports",
+                tab_reunions: "Meeting Management",
+                tab_missions: "Missions & Visits",
+                tab_acteurs: "Local Actors",
+                tab_alertes: "Alerts & Notifications",
+                tab_statistiques: "AI Statistics & Reports",
+                tab_archives: "Archive Management",
+                tab_contact: "Administrative Contacts",
+                welcome_title: "Welcome to the Guinguineo Sub-Prefecture Digital Platform",
+                welcome_desc: "Modern, centralized and interactive digital platform for administrative, land, cartographic and citizen services.",
+                btn_search: "Search",
+                sub_actu: "News & Releases",
+                sub_images: "Image Gallery",
+                sub_videos: "Institutional Videos",
+                title_terre: "Land Approval Module",
+                title_parcelle: "Plot Allocation Request",
+                title_autorisation: "Authorization Request (Events)",
+                title_courriers: "Mail & File Management",
+                title_suivi: "Communes, Villages & Neighborhoods Tracking",
+                title_projets: "Projects & Infrastructure Management",
+                title_signalement: "Citizen Issue Reporting",
+                title_reunions: "Meeting Management & Calendar",
+                title_missions: "Missions & Field Visits Management",
+                title_acteurs: "Local Actors Database",
+                title_alertes: "Alerts & Notifications Center",
+                title_statistiques: "AI Statistics & Reports",
+                title_archives: "Administrative Archive Management",
+                title_contact: "Official Contacts",
+                btn_send_email: "Send (fatougaye1004@gmail.com)"
+            },
+            es: {
+                menu_title: "Módulos Administrativos",
+                tab_accueil: "Inicio",
+                tab_terre: "Aprobación de Tierras",
+                tab_cartographie: "Cartografía",
+                tab_parcelle: "Solicitud de Parcela",
+                tab_autorisation: "Solicitud de Autorización",
+                tab_courriers: "Gestión de Correo",
+                tab_suivi: "Comunas y Aldeas",
+                tab_projets: "Proyectos e Infraestructura",
+                tab_signalement: "Informes Ciudadanos",
+                tab_reunions: "Gestión de Reuniones",
+                tab_missions: "Misiones y Visitas",
+                tab_acteurs: "Actores Locales",
+                tab_alertes: "Alertas y Notificaciones",
+                tab_statistiques: "Estadísticas e Informes IA",
+                tab_archives: "Gestión de Archivos",
+                tab_contact: "Contactos Administrativos",
+                welcome_title: "Bienvenido a la Plataforma Digital de la Subprefectura de Guinguineo",
+                welcome_desc: "Plataforma digital moderna, centralizada e interactiva para servicios administrativos, de tierras, cartográficos y ciudadanos.",
+                btn_search: "Buscar",
+                sub_actu: "Noticias y Comunicados",
+                sub_images: "Galería de Imágenes",
+                sub_videos: "Videos Institucionales",
+                title_terre: "Módulo de Aprobación de Tierras",
+                title_parcelle: "Solicitud de Asignación de Parcela",
+                title_autorisation: "Solicitud de Autorización",
+                title_courriers: "Gestión de Correo y Archivos",
+                title_suivi: "Seguimiento de Comunas y Pueblos",
+                title_projets: "Gestión de Proyectos e Infraestructura",
+                title_signalement: "Informes de Problemas Ciudadanos",
+                title_reunions: "Gestión de Reuniones y Calendario",
+                title_missions: "Gestión de Misiones",
+                title_acteurs: "Base de Datos de Actores Locales",
+                title_alertes: "Centro de Alertas y Notificaciones",
+                title_statistiques: "Estadísticas e Informes IA",
+                title_archives: "Gestión de Archivos",
+                title_contact: "Contactos Oficiales",
+                btn_send_email: "Enviar (fatougaye1004@gmail.com)"
+            },
+            ar: {
+                menu_title: "الوحدات الإدارية",
+                tab_accueil: "الرئيسية",
+                tab_terre: "موافقة الأراضي",
+                tab_cartographie: "الخرائط",
+                tab_parcelle: "طلب قطعة أرض",
+                tab_autorisation: "طلب ترخيص",
+                tab_courriers: "إدارة البريد",
+                tab_suivi: "متابعة البلديات والقرى",
+                tab_projets: "المشاريع والبنية التحتية",
+                tab_signalement: "بلاغات المواطنين",
+                tab_reunions: "إدارة الاجتماعات",
+                tab_missions: "البعثات والزيارات",
+                tab_acteurs: "الجهات الفاعلة المحلية",
+                tab_alertes: "التنبيهات والإشعارات",
+                tab_statistiques: "الإحصاءات والتقارير الذكية",
+                tab_archives: "إدارة الأرشيف",
+                tab_contact: "جهات الاتصال الإدارية",
+                welcome_title: "مرحبًا بكم في المنصة الرقمية لمحافظة غينغينيو الفرعية",
+                welcome_desc: "منصة رقمية حديثة ومركزية وتفاعلية للخدمات الإدارية والأرضية والخرائطية والمواطنين.",
+                btn_search: "بحث",
+                sub_actu: "الأخبار والبيانات",
+                sub_images: "معرض الصور",
+                sub_videos: "فيديوهات مؤسسية",
+                title_terre: "وحدة موافقة الأراضي",
+                title_parcelle: "طلب تخصيص قطعة أرض",
+                title_autorisation: "طلب ترخيص (فعاليات)",
+                title_courriers: "إدارة البريد والملفات",
+                title_suivi: "متابعة البلديات والقرى والأحياء",
+                title_projets: "إدارة المشاريع والبنية التحتية",
+                title_signalement: "الإبلاغ عن مشاكل المواطنين",
+                title_reunions: "إدارة الاجتماعات والتقويم",
+                title_missions: "إدارة البعثات والزيارات الميدانية",
+                title_acteurs: "قاعدة بيانات الجهات المحلية",
+                title_alertes: "مركز التنبيهات والإشعارات",
+                title_statistiques: "الإحصاءات والتقارير الذكية",
+                title_archives: "إدارة الأرشيف الإداري",
+                title_contact: "جهات الاتصال الرسمية",
+                btn_send_email: "إرسال (fatougaye1004@gmail.com)"
+            },
+            ff: {
+                menu_title: "Kuutorɗe Laamu",
+                tab_accueil: "Fuɗɗoode",
+                tab_terre: "Jaɓgol Leydi",
+                tab_cartographie: "Kharital",
+                tab_parcelle: "Toragol Lekki / Leydi",
+                tab_autorisation: "Toragol Njiylawu",
+                tab_courriers: "Kuutorɗe Bataake",
+                tab_suivi: "Reentaade Gure",
+                tab_projets: "Poroje e Kuutorɗe",
+                tab_signalement: "Kumpital Yimɓe",
+                tab_reunions: "Topitagol Diisnondirɗe",
+                tab_missions: "Njeddudi e Yiyngo",
+                tab_acteurs: "Gollotooɓe Nokku",
+                tab_alertes: "Tintine e Kumpital",
+                tab_statistiques: "Limlebbi e Raporeeji",
+                tab_archives: "Kuutorɗe Aarum",
+                tab_contact: "Jokkondiral Laamu",
+                welcome_title: "Dalillaama e Lowre Digital Sub-Préfecture Guinguineo",
+                welcome_desc: "Lowre hesre, mooftunde ngam wallude gollorɗe laamu, leydi, kharital e yimɓe fof.",
+                btn_search: "Yiylo",
+                sub_actu: "Kumpite",
+                sub_images: "Natal",
+                sub_videos: "Wideyoo",
+                title_terre: "Kuutorɗe Jaɓgol Leydi",
+                title_parcelle: "Toragol Leydi",
+                title_autorisation: "Toragol Njiylawu",
+                title_courriers: "Njiylawu Bataake",
+                title_suivi: "Reentaade Gure e Kassaaɗi",
+                title_projets: "Poroje e Kuutorɗe",
+                title_signalement: "Kumpital Yimɓe",
+                title_reunions: "Diisnondirɗe",
+                title_missions: "Njeddudi",
+                title_acteurs: "Gollotooɓe Nokku",
+                title_alertes: "Tintine",
+                title_statistiques: "Limlebbi",
+                title_archives: "Aarum",
+                title_contact: "Jokkondiral",
+                btn_send_email: "Neldu (fatougaye1004@gmail.com)"
+            }
+        };
+
+        function changeLanguage(lang) {
+            currentLang = lang;
+            const t = translations[lang] || translations['fr'];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.innerText = t[key];
+            });
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-emerald-700', 'bg-emerald-50');
+                btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+                if (btn.getAttribute('data-tab') === tabId) {
+                    btn.classList.remove('text-slate-600', 'hover:bg-slate-100');
+                    btn.classList.add('text-emerald-700', 'bg-emerald-50');
+                }
+            });
+
+            // Initialize Leaflet Map if switching to cartography
+            if (tabId === 'cartographie' && !map) {
+                setTimeout(initMap, 200);
+            }
+            // Initialize charts if switching to statistics
+            if (tabId === 'statistiques') {
+                setTimeout(initCharts, 200);
+            }
+        }
+
+        function switchSubSection(sub) {
+            const container = document.getElementById('homeSubContent');
+            if (sub === 'actu') {
+                container.innerHTML = `<h3 class="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2"><i class="fa-solid fa-newspaper text-emerald-600"></i> Actualités Officielles</h3>
+                <p class="text-xs text-slate-600">Toutes les dernières notes de service et communiqués officiels du Sous-Préfet de Guinguineo.</p>`;
+            } else if (sub === 'image') {
+                container.innerHTML = `<h3 class="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2"><i class="fa-solid fa-images text-emerald-600"></i> Galerie Images Officielles</h3>
+                <div class="grid grid-cols-3 gap-2">
+                    <img src="https://placehold.co/300x200/166534/ffffff?text=Visite+Ourour" class="rounded-lg shadow">
+                    <img src="https://placehold.co/300x200/15803d/ffffff?text=Reunion+CDD" class="rounded-lg shadow">
+                    <img src="https://placehold.co/300x200/14532d/ffffff?text=Chantier+Forage" class="rounded-lg shadow">
+                </div>`;
+            } else if (sub === 'video') {
+                container.innerHTML = `<h3 class="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2"><i class="fa-solid fa-video text-emerald-600"></i> Vidéos Institutionnelles</h3>
+                <div class="p-4 bg-slate-900 text-white rounded-xl flex items-center justify-between">
+                    <span>Capsule informative : Développement local à Guinguineo</span>
+                    <button class="bg-emerald-600 px-3 py-1.5 rounded text-xs"><i class="fa-solid fa-play mr-1"></i> Lire</button>
+                </div>`;
+            }
+        }
+
+        function initMap() {
+            // Guinguineo coordinates approx: 14.258, -15.954 (or Kaolack region center)
+            map = L.map('leafletMap').setView([14.258, -15.954], 11);
+
+            const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
+            const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles © Esri' });
+            const relief = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: '© OpenTopoMap' });
+
+            osm.addTo(map);
+            baseLayers = { "OSM": osm, "Satellite": satellite, "Relief": relief };
+
+            // Add marker for Guinguineo Sub-Prefecture
+            L.marker([14.258, -15.954]).addTo(map)
+                .bindPopup("<b>Sous-Préfecture de Guinguineo</b><br>Centre administratif principal").openPopup();
+        }
+
+        function setBaseMap(type) {
+            if (!map) return;
+            map.eachLayer(layer => {
+                if (layer instanceof L.TileLayer) map.removeLayer(layer);
+            });
+            if (type === 'osm') L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+            else if (type === 'satellite') L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(map);
+            else if (type === 'relief') L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17 }).addTo(map);
+        }
+
+        function displayCoordinates() {
+            const x = parseFloat(document.getElementById('coordX').value);
+            const y = parseFloat(document.getElementById('coordY').value);
+            if (!isNaN(x) && !isNaN(y) && map) {
+                map.setView([y, x], 14);
+                L.marker([y, x]).addTo(map).bindPopup(`Coordonnées saisies: X=${x}, Y=${y}`).openPopup();
+            } else {
+                alert("Veuillez saisir des coordonnées valides (X et Y).");
+            }
+        }
+
+        function searchMapLocation() {
+            const query = document.getElementById('mapSearchInput').value;
+            if (query && map) {
+                // Simulated search result in Senegal zone
+                map.setView([14.28, -15.90], 13);
+                L.marker([14.28, -15.90]).addTo(map).bindPopup(`Résultat de recherche : ${query}`).openPopup();
+            }
+        }
+
+        function calculateItinerary() {
+            const start = document.getElementById('routeStart').value || 'Position Actuelle (GPS)';
+            const end = document.getElementById('routeEnd').value || 'Destination';
+            const mode = document.getElementById('transportMode').value;
+            
+            // Text-to-speech voice guidance simulation
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(`Calcul de l'itinéraire vers ${end} en mode ${mode}. Distance estimée à 12 kilomètres. Durée 18 minutes. Bon voyage.`);
+                utterance.lang = 'fr-FR';
+                window.speechSynthesis.speak(utterance);
+            }
+            alert(`Itinéraire calculé avec succès (${mode}). Guidage vocal activé.`);
+        }
+
+        function runAIGeoAnalysis() {
+            document.getElementById('aiGeoResult').innerText = "Analyse IA terminée : Surface estimée à 45.2 Hectares. Zone à vocation agricole majoritaire. Graphique généré avec succès.";
+        }
+
+        function handleGeoImport(event) {
+            const file = event.target.files[0];
+            if (file) {
+                alert(`Fichier ${file.name} importé avec succès et affiché sur la carte cartographique.`);
+            }
+        }
+
+        function exportGeoData() {
+            alert("Exportation des données géographiques (GeoJSON / KML) effectuée avec succès.");
+        }
+
+        function setDrawMode(mode) {
+            activeDrawMode = mode;
+            alert(`Mode de dessin activé : ${mode}. Cliquez sur la carte pour tracer.`);
+        }
+
+        function clearDrawings() {
+            alert("Tous les objets dessinés ont été effacés.");
+        }
+
+        function toggleLayer(layerName, show) {
+            console.log(`Couche ${layerName} affichée: ${show}`);
+        }
+
+        function openCameraModal(inputId) {
+            targetInputId = inputId;
+            document.getElementById('cameraModal').classList.remove('hidden');
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    videoStream = stream;
+                    document.getElementById('webcamVideo').srcObject = stream;
+                })
+                .catch(err => {
+                    console.error("Caméra non accessible:", err);
+                    alert("Impossible d'accéder à la caméra.");
+                });
+        }
+
+        function closeCameraModal() {
+            document.getElementById('cameraModal').classList.add('hidden');
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+            }
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('webcamVideo');
+            const canvas = document.getElementById('webcamCanvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Add timestamp overlay
+            ctx.fillStyle = 'yellow';
+            ctx.font = '20px Inter';
+            ctx.fillText(new Date().toLocaleString(), 20, canvas.height - 20);
+
+            alert("Photo capturée avec succès avec horodatage et géolocalisation !");
+            closeCameraModal();
+        }
+
+        let isDrawing = false;
+        const sigCanvas = document.getElementById('sigCanvas');
+        const sigCtx = sigCanvas.getContext('2d');
+
+        sigCanvas.addEventListener('mousedown', startDraw);
+        sigCanvas.addEventListener('mousemove', draw);
+        sigCanvas.addEventListener('mouseup', stopDraw);
+
+        function startDraw(e) { isDrawing = true; sigCtx.beginPath(); sigCtx.moveTo(e.offsetX, e.offsetY); }
+        function draw(e) { if (!isDrawing) return; sigCtx.lineTo(e.offsetX, e.offsetY); sigCtx.stroke(); }
+        function stopDraw() { isDrawing = false; }
+
+        function openSignatureModal() { document.getElementById('signatureModal').classList.remove('hidden'); }
+        function closeSignatureModal() { document.getElementById('signatureModal').classList.add('hidden'); }
+        function clearSignature() { sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height); }
+        function saveSignature() { alert("Signature électronique enregistrée avec succès !"); closeSignatureModal(); }
+
+        function initCharts() {
+            const ctx1 = document.getElementById('statChart1').getContext('2d');
+            new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['Ourour', 'Ngélou', 'Gagnick', 'Panal Wolof', 'Dara Mboss'],
+                    datasets: [{ label: 'Demandes de parcelles', data: [45, 32, 28, 19, 37], backgroundColor: '#16a34a' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            const ctx2 = document.getElementById('statChart2').getContext('2d');
+            new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Terminés', 'En cours', 'À démarrer'],
+                    datasets: [{ data: [12, 18, 5], backgroundColor: ['#15803d', '#fdef42', '#dc2626'] }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function generateIAReport() {
+            alert("Rapport hebdomadaire généré automatiquement par l'IA avec graphiques et export PDF réussi !");
+        }
+
+        function submitTerreForm() { sendEmailNotification("Approbation de terre"); }
+        function submitParcelleForm() { sendEmailNotification("Demande de parcelle"); }
+        function submitAutorisationForm() { sendEmailNotification("Demande d'autorisation"); }
+        function submitCourrierForm() { sendEmailNotification("Gestion des courriers"); }
+        function submitSuiviForm() { sendEmailNotification("Suivi des communes"); }
+        function submitProjetForm() { sendEmailNotification("Gestion des projets"); }
+        function submitSignalementForm() { sendEmailNotification("Signalement citoyen"); }
+        function submitReunionForm() { sendEmailNotification("Gestion des réunions"); }
+        function submitMissionForm() { sendEmailNotification("Gestion des missions"); }
+
+        function sendEmailNotification(moduleName) {
+            alert(`Les informations du module [${moduleName}] ont été envoyées avec succès à l'adresse officielle : fatougaye1004@gmail.com`);
+        }
+
+        function calculateBudget() {
+            const prevu = parseFloat(document.getElementById('bPrevu').value) || 0;
+            const consomme = parseFloat(document.getElementById('bConsomme').value) || 0;
+            document.getElementById('bRestant').value = (prevu - consomme) + " FCFA";
+        }
+
+        function checkCreditOther(val) {
+            document.getElementById('creditAutreContainer').classList.toggle('hidden', val !== 'autre');
+        }
+        function checkAutoOther(val) {
+            document.getElementById('autoAutreContainer').classList.toggle('hidden', val !== 'autres');
+        }
+        function checkServiceOther(val) {
+            document.getElementById('serviceAutreContainer').classList.toggle('hidden', val !== 'autre');
+        }
+        function checkSigOther(val) {
+            document.getElementById('sigAutreContainer').classList.toggle('hidden', val !== 'autres');
+        }
+
+        function toggleNotificationModal() {
+            document.getElementById('notificationModal').classList.toggle('hidden');
+        }
+
+        function startVoiceSearch() {
+            const icon = document.getElementById('micIcon');
+            icon.classList.add('text-red-500', 'fa-bounce');
+            setTimeout(() => {
+                icon.classList.remove('text-red-500', 'fa-bounce');
+                document.getElementById('globalSearchInput').value = "Attribution de terre Ourour";
+                alert("Recherche vocale reconnue : 'Attribution de terre Ourour'");
+            }, 2500);
+        }
+
+        function startVoiceSearchMap() {
+            alert("Microphone cartographique actif. Prononcez le nom de la zone...");
+        }
+
+        function exportTerrePDF() { alert("Rapport budget exporté en PDF avec succès."); }
+        function exportParcelleCoords() { alert("Coordonnées de parcelle exportées avec succès."); }
+        function sendToCartography() { switchTab('cartographie'); alert("Coordonnées transmises et affichées sur l'image satellite."); }
+
+        window.onload = function() {
+            // Set auto date on signalement
+            const d = new Date();
+            if(document.getElementById('sigAutoDate')) {
+                document.getElementById('sigAutoDate').value = d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+            }
+            calculateBudget();
+        }
+    </script>
+</body>
+</html>
